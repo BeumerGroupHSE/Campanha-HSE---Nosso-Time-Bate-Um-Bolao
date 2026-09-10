@@ -174,7 +174,7 @@
   .lang-switch{display:flex; align-items:center; gap:4px;}
   .lang-btn{
     width:28px; height:28px; border-radius:50%; border:1px solid var(--line);
-    background:rgba(255,255,255,0.03); cursor:pointer; padding:0;
+    background:rgba(255,255,255,0.03); cursor:pointer; padding:0; color:#fff;
     font-size:14px; line-height:1; display:flex; align-items:center; justify-content:center;
     opacity:0.55; filter:grayscale(40%); transition:opacity .2s ease, filter .2s ease, border-color .2s ease, transform .2s ease;
   }
@@ -218,23 +218,6 @@
   }
   .tools-btn:hover{background:rgba(0,159,227,0.22); border-color:var(--blue-light); transform:translateY(-1px);}
   .tools-btn svg{flex:none;}
-  .tools-btn-soon{
-    position:fixed; top:20px; right:20px; z-index:46;
-    background:var(--navy); border-color:rgba(244,190,44,0.5); color:var(--gold);
-    box-shadow:0 10px 30px rgba(0,0,0,0.45);
-    animation:soonPulse 2.4s ease-in-out infinite;
-  }
-  .tools-btn-soon:hover{background:rgba(244,190,44,0.18); border-color:var(--gold); transform:translateY(-1px) scale(1.03);}
-  @keyframes soonPulse{
-    0%,100%{box-shadow:0 10px 30px rgba(0,0,0,0.45), 0 0 0 rgba(244,190,44,0);}
-    50%{box-shadow:0 10px 30px rgba(0,0,0,0.45), 0 0 16px rgba(244,190,44,0.4);}
-  }
-  @media (prefers-reduced-motion:reduce){
-    .tools-btn-soon{animation:none;}
-  }
-  @media (max-width:720px){
-    .tools-btn-soon{top:auto; bottom:88px; right:14px; padding:10px 16px; font-size:12px;}
-  }
   .ros-count-badge{
     display:inline-flex; align-items:center; justify-content:center;
     min-width:18px; height:18px; padding:0 5px; border-radius:999px;
@@ -680,15 +663,21 @@
   #perfSelect{
     width:100%; padding:10px 12px; border-radius:8px; margin-top:6px;
     background:rgba(255,255,255,0.05); border:1px solid var(--line);
-    color:#fff; font-family:'Inter',sans-serif; font-size:14px;
+    color:#fff; font-family:'Inter',sans-serif; font-size:14px; cursor:pointer;
   }
   #perfSelect:focus{outline:2px solid var(--blue); outline-offset:1px;}
   /* O menu suspenso nativo do navegador costuma forçar fundo branco na lista de
-     opções (ignorando o tema escuro da página) — sem isso, o texto branco do
-     select fica invisível ali dentro. Aqui garantimos que as opções sempre
-     apareçam legíveis, com texto escuro sobre esse fundo claro forçado. */
+     opções, ignorando boa parte do CSS da página — por isso não dá pra deixar
+     essa lista 100% igual ao resto do site em todo navegador. Aqui a gente chega
+     o mais perto possível: um tom dentro da paleta (não branco puro) onde o
+     navegador permite, com texto sempre escuro o bastante pra continuar legível
+     mesmo nos navegadores que ignoram a cor de fundo e forçam branco puro. */
   #perfSelect option{
-    color:var(--navy); background:#fff;
+    color:var(--navy); background:#EAF7FC;
+    padding:8px;
+  }
+  #perfSelect optgroup{
+    color:var(--navy); background:#EAF7FC; font-family:'Oswald',sans-serif; font-weight:600;
   }
   .perf-card{
     margin-top:18px; padding:18px; border-radius:12px;
@@ -811,7 +800,7 @@
   @media print{
     body{background:#fff !important; color:#111 !important;}
     body::before{display:none;}
-    .splash, .tip-bubble, .hse-badge, .tools-btn-soon, .lang-switch, .clock, .tabs, .search-row,
+    .splash, .tip-bubble, .hse-badge, .lang-switch, .clock, .tabs, .search-row,
     #board, footer, .overlay, .aurora{
       display:none !important;
     }
@@ -857,13 +846,6 @@
   </div>
 </div>
 
-<a class="tools-btn tools-btn-soon" href="./em-breve.html">
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <circle cx="12" cy="12" r="10"></circle>
-    <path d="M12 6v6l4 2"></path>
-  </svg>
-  Em breve
-</a>
 <div class="wrap">
 
   <header>
