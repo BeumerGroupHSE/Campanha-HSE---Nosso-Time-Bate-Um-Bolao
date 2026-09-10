@@ -573,18 +573,6 @@ function renderPointsAnalysis(){
   const participating = allPeople.filter(p => (p.points||0) > 0).length;
   const totalPoints = allPeople.reduce((s,p) => s + (p.points||0), 0);
 
-  const rosList = fullData.ros || [];
-  const rosAbertos = rosList.filter(r => { const s = statusNorm(r.status); return s === 'aberto' || s === ''; }).length;
-  const rosAndamento = rosList.filter(r => statusNorm(r.status).includes('andamento')).length;
-  const rosConcluidos = rosList.filter(r => isConcluidoAdmin(r.status)).length;
-  const rosAtrasados = rosList.filter(r => {
-    if(isConcluidoAdmin(r.status)) return false;
-    const d = parsePrazoAdmin(r.prazo);
-    if(!d) return false;
-    const hoje = new Date(); hoje.setHours(0,0,0,0);
-    return d.getTime() < hoje.getTime();
-  }).length;
-
   const semPontosFilial = filial.filter(p => !(p.points > 0)).map(p => p.name);
   const semPontosMatriz = matriz.filter(p => !(p.points > 0)).map(p => p.name);
 
@@ -610,12 +598,6 @@ function renderPointsAnalysis(){
       <div class="stat-grid">
         <div class="stat-card"><div class="stat-value">${participating}/${totalPeople}</div><div class="stat-label">${t('analise_collab_participating')}</div></div>
         <div class="stat-card"><div class="stat-value">${totalPoints.toLocaleString('pt-BR')}</div><div class="stat-label">${t('analise_points_summed')}</div></div>
-      </div>
-      <div class="ros-mini-grid">
-        <div class="ros-mini-card"><div class="val" style="color:#FCA5A5;">${rosAbertos}</div><div class="lbl">${t('ros_open_label')}</div></div>
-        <div class="ros-mini-card"><div class="val" style="color:var(--gold);">${rosAndamento}</div><div class="lbl">${t('ros_progress_label')}</div></div>
-        <div class="ros-mini-card"><div class="val" style="color:#86EFAC;">${rosConcluidos}</div><div class="lbl">${t('ros_completed_label')}</div></div>
-        <div class="ros-mini-card"><div class="val" style="color:#EF4444;">${rosAtrasados}</div><div class="lbl">${t('ros_overdue_label')}</div></div>
       </div>
     </div>
 
@@ -777,7 +759,28 @@ function renderRosAnalysis(){
   const mensal = buildRosMonthlySeries();
   const participacao = buildRosParticipationStats();
 
+  const rosList = fullData.ros || [];
+  const rosAbertos = rosList.filter(r => { const s = statusNorm(r.status); return s === 'aberto' || s === ''; }).length;
+  const rosAndamento = rosList.filter(r => statusNorm(r.status).includes('andamento')).length;
+  const rosConcluidos = rosList.filter(r => isConcluidoAdmin(r.status)).length;
+  const rosAtrasados = rosList.filter(r => {
+    if(isConcluidoAdmin(r.status)) return false;
+    const d = parsePrazoAdmin(r.prazo);
+    if(!d) return false;
+    const hoje = new Date(); hoje.setHours(0,0,0,0);
+    return d.getTime() < hoje.getTime();
+  }).length;
+
   container.innerHTML = `
+    <div class="analysis-section">
+      <h3>${t('analise_resumo_geral')}</h3>
+      <div class="ros-mini-grid">
+        <div class="ros-mini-card"><div class="val" style="color:#FCA5A5;">${rosAbertos}</div><div class="lbl">${t('ros_open_label')}</div></div>
+        <div class="ros-mini-card"><div class="val" style="color:var(--gold);">${rosAndamento}</div><div class="lbl">${t('ros_progress_label')}</div></div>
+        <div class="ros-mini-card"><div class="val" style="color:#86EFAC;">${rosConcluidos}</div><div class="lbl">${t('ros_completed_label')}</div></div>
+        <div class="ros-mini-card"><div class="val" style="color:#EF4444;">${rosAtrasados}</div><div class="lbl">${t('ros_overdue_label')}</div></div>
+      </div>
+    </div>
     <div class="analysis-grid2">
       <div class="analysis-section">
         <h3>${t('analise_avg_resolution')}</h3>
