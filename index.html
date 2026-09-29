@@ -1077,7 +1077,7 @@
   <div class="modal">
     <div class="modal-title-row">
       <h2 data-i18n="admin_panel_title">Painel do administrador</h2>
-      <a class="analise-link-btn" href="./analise.html?admin=1" target="_blank" rel="noopener noreferrer">
+      <a class="analise-link-btn" href="./analise.html" target="_blank" rel="noopener noreferrer">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M18 20V10"></path><path d="M12 20V4"></path><path d="M6 20v-6"></path>
         </svg>
@@ -1133,6 +1133,7 @@
   <div class="tip-text" id="tipText"></div>
 </div>
 
+<script src="./admin-auth.js"></script>
 <script>
 /* ---------------- Idioma (PT / EN / DE) ---------------- */
 const I18N = {
@@ -1161,6 +1162,7 @@ const I18N = {
     welcome_hint:'Tudo isso fica disponível clicando no ícone de engrenagem <span class="gear-inline">⚙</span> no rodapé da página.',
     welcome_cta:'Entendi, vamos lá!',
     save_success:'Placar publicado com sucesso!',
+    saving:'Salvando...', error_label:'Erro:', error_connection:'Erro de conexão ao salvar.', error_unauthorized:'sessão de admin inválida — entre novamente.', error_locked:'muitas tentativas de senha erradas, aguarde alguns minutos.',
     bulk_updated:(n)=>`${n} atualizado(s)`, bulk_added:(n)=>`${n} novo(s)`, bulk_invalid:(n)=>`${n} linha(s) não reconhecida(s)`,
     bulk_review:'. Revise abaixo e clique em "Salvar e publicar".',
     analise_geral_sub:'Visão geral da campanha, calculada a partir dos dados carregados agora. Some sozinha conforme você atualiza os pontos e os ROS.',
@@ -1221,6 +1223,7 @@ const I18N = {
     welcome_hint:'All of this is available by clicking the gear icon <span class="gear-inline">⚙</span> in the page footer.',
     welcome_cta:'Got it, let\'s go!',
     save_success:'Board published successfully!',
+    saving:'Saving...', error_label:'Error:', error_connection:'Connection error while saving.', error_unauthorized:'invalid admin session — please sign in again.', error_locked:'too many wrong password attempts, please wait a few minutes.',
     bulk_updated:(n)=>`${n} updated`, bulk_added:(n)=>`${n} new`, bulk_invalid:(n)=>`${n} line(s) not recognized`,
     bulk_review:'. Review below and click "Save and publish".',
     analise_geral_sub:'Campaign overview, calculated from the data currently loaded. Updates automatically as you update points and reports.',
@@ -1281,6 +1284,7 @@ const I18N = {
     welcome_hint:'All das ist über das Zahnrad-Symbol <span class="gear-inline">⚙</span> in der Fußzeile der Seite verfügbar.',
     welcome_cta:'Verstanden, los geht\'s!',
     save_success:'Board erfolgreich veröffentlicht!',
+    saving:'Wird gespeichert...', error_label:'Fehler:', error_connection:'Verbindungsfehler beim Speichern.', error_unauthorized:'ungültige Admin-Sitzung — bitte erneut anmelden.', error_locked:'zu viele Fehlversuche, bitte einige Minuten warten.',
     bulk_updated:(n)=>`${n} aktualisiert`, bulk_added:(n)=>`${n} neu`, bulk_invalid:(n)=>`${n} Zeile(n) nicht erkannt`,
     bulk_review:'. Unten überprüfen und auf "Speichern und veröffentlichen" klicken.',
     analise_geral_sub:'Kampagnenübersicht, berechnet aus den aktuell geladenen Daten. Aktualisiert sich automatisch, wenn Sie Punkte und Meldungen aktualisieren.',
@@ -1357,11 +1361,9 @@ applyI18n();
 
 // Modo administrador: só fica visível quando o link é aberto com ?admin=1 no final.
 // Como agora é o MESMO artefato para os dois casos, os dados ficam sempre sincronizados.
-// Modo administrador: ativa com ?admin=1 no link (uma vez só) e o navegador
-// "lembra" disso dali pra frente — não precisa mais do link especial toda vez.
-const ADMIN_PARAM = new URLSearchParams(window.location.search).get('admin') === '1';
-if(ADMIN_PARAM) localStorage.setItem('hseAdminMode', '1');
-const ADMIN_MODE = ADMIN_PARAM || localStorage.getItem('hseAdminMode') === '1';
+// Modo administrador: só com login (senha conferida no Apps Script — ver admin-auth.js).
+// Depois de entrar, o navegador lembra do login por 7 dias.
+const ADMIN_MODE = window.HSE_AUTH && HSE_AUTH.isLoggedIn();
 if(!ADMIN_MODE){
   const gearEl = document.getElementById('gearBtn');
   if(gearEl) gearEl.style.display = 'none';
@@ -1371,16 +1373,30 @@ if(!ADMIN_MODE){
   const logoutEl = document.getElementById('adminLogoutBtn');
   if(logoutEl){
     logoutEl.style.display = '';
-    logoutEl.addEventListener('click', () => {
-      localStorage.removeItem('hseAdminMode');
-      window.location.href = window.location.pathname;
-    });
+    logoutEl.addEventListener('click', () => HSE_AUTH.logout());
   }
 }
 
 // Fonte dos dados: Google Apps Script publicado a partir da Planilha Google.
 // Não exige login de ninguém para ler ou (via painel do admin) gravar os pontos.
 const API_URL = 'https://script.google.com/macros/s/AKfycby7orhf31seXoADvA2JWeVBRhwsZzbsaaMZ-orXeCgE0r5hAaEB2fsvB0sOn10BVgsveA/exec';
+
+// Toda gravação passa por aqui: envia a senha do admin junto e, se o Apps Script
+// recusar (senha trocada/sessão expirada), reabre a janelinha de login.
+async function postAdmin(payload){
+  const senha = HSE_AUTH.getKey();
+  if(!senha){ HSE_AUTH.handleUnauthorized(); return { ok:false, error:'nao_autorizado' }; }
+  const res = await fetch(API_URL, {
+    method:'POST',
+    headers:{ 'Content-Type':'text/plain;charset=utf-8' }, // evita pre-flight de CORS no Apps Script
+    body: JSON.stringify(Object.assign({}, payload, { senha: senha }))
+  });
+  const json = await res.json();
+  if(!json.ok && (json.error === 'nao_autorizado' || json.error === 'senha_nao_configurada')){
+    HSE_AUTH.handleUnauthorized();
+  }
+  return json;
+}
 
 const UNITS = ['filial','matriz']; // unidades reais, com dados próprios na planilha
 let currentUnit = 'filial'; // 'filial' | 'matriz' | 'geral'
@@ -1662,35 +1678,22 @@ async function fetchAllData(){
   }
 }
 
+// Retorna { ok:true } ou { ok:false, error:'...' } — quem chama mostra a mensagem certa.
 async function saveUnit(unit, rows){
-  const payload = JSON.stringify({ unit: unit, rows: rows });
-  let posted = false;
+  let json;
   try{
-    await fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // evita pre-flight de CORS no Apps Script
-      body: payload
-    });
-    posted = true;
+    json = await postAdmin({ unit: unit, rows: rows });
   }catch(e){
-    try{
-      // modo de reserva: dispara sem tentar ler a resposta (alguns navegadores bloqueiam a leitura por CORS)
-      await fetch(API_URL, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: payload
-      });
-      posted = true;
-    }catch(e2){
-      console.error('Falha ao salvar na planilha:', e2);
-    }
+    console.error('Falha ao salvar na planilha:', e);
+    return { ok:false, error:'conexao' };
   }
+  if(!json.ok) return json;
 
-  // atualização otimista imediata na tela, e confirma buscando de novo da fonte
+  // atualização imediata na tela, e confirma buscando de novo da fonte
   data[unit] = rows;
   updatedAt[unit] = new Date().toISOString();
-  if(posted) await fetchAllData();
+  await fetchAllData();
+  return json;
 }
 
 function fmtWhen(iso){
@@ -2243,16 +2246,12 @@ document.getElementById('diasAcidentesSaveBtn').addEventListener('click', async 
   if(!brDate){ diasNote.textContent = 'Escolha uma data válida.'; return; }
   diasNote.textContent = 'Salvando...';
   try{
-    const res = await fetch(API_URL, {
-      method:'POST',
-      body: JSON.stringify({ type:'config', diasSemAcidentesDesde: brDate })
-    });
-    const json = await res.json();
+    const json = await postAdmin({ type:'config', diasSemAcidentesDesde: brDate });
     if(json.ok){
       data.diasSemAcidentesDesde = brDate;
       diasNote.textContent = 'Salvo! O contador vai atualizar na próxima abertura da página.';
     } else {
-      diasNote.textContent = 'Erro: ' + (json.error || 'falha desconhecida');
+      diasNote.textContent = t('error_label') + ' ' + (json.error === 'bloqueado' ? t('error_locked') : (json.error === 'nao_autorizado' || json.error === 'senha_nao_configurada') ? t('error_unauthorized') : (json.error || 'falha desconhecida'));
     }
   }catch(err){
     diasNote.textContent = 'Erro de conexão ao salvar.';
@@ -2373,8 +2372,14 @@ document.getElementById('bulkApplyBtn').addEventListener('click', ()=>{
 
 document.getElementById('saveBtn').addEventListener('click', async ()=>{
   const clean = editBuffer.filter(r=>r.name && r.name.trim().length>0);
-  await saveUnit(editUnit, clean);
   const note = document.getElementById('saveNote');
+  note.textContent = t('saving');
+  const result = await saveUnit(editUnit, clean);
+  if(!result.ok){
+    note.textContent = result.error === 'conexao' ? t('error_connection')
+                     : t('error_label') + ' ' + (result.error === 'bloqueado' ? t('error_locked') : t('error_unauthorized'));
+    return;
+  }
   note.textContent = t('save_success');
   setTimeout(()=>{ note.textContent=''; }, 2500);
   if(editUnit === currentUnit){ prevRendered = {}; renderBoard(); }
@@ -2564,7 +2569,8 @@ async function init(){
 
   // primeira execução (planilha ainda vazia): publica o roteiro oficial de
   // colaboradores (nomes reais, pontuação zerada) direto na Planilha Google
-  if(data.filial.length === 0 && data.matriz.length === 0){
+  // (só quando um admin logado abre — visitante comum não grava nada)
+  if(ADMIN_MODE && data.filial.length === 0 && data.matriz.length === 0){
     await saveUnit('filial', SEED.filial);
     await saveUnit('matriz', SEED.matriz);
   }
