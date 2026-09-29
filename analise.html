@@ -231,7 +231,7 @@
         </svg>
         <span data-i18n="back_to_board">Voltar ao placar</span>
       </a>
-      <a class="back-btn" href="./ros.html?admin=1">
+      <a class="back-btn" href="./ros.html">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M9 11l3 3L22 4"></path>
           <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
@@ -248,7 +248,10 @@
     </svg>
     <h2 data-i18n="locked_title">Página restrita à gestão</h2>
     <p data-i18n="locked_text">Esse painel reúne indicadores internos da campanha e só fica disponível para quem acessa com autorização de administrador.</p>
-    <a class="back-btn" href="./index.html" data-i18n="back_to_board">Voltar ao placar</a>
+    <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+      <button type="button" class="back-btn" id="lockedLoginBtn" data-i18n="login_btn">Entrar como admin</button>
+      <a class="back-btn" href="./index.html" data-i18n="back_to_board">Voltar ao placar</a>
+    </div>
   </div>
 
   <div id="app" style="display:none;">
@@ -311,12 +314,10 @@
   </div>
 </div>
 
+<script src="./admin-auth.js"></script>
 <script>
-// Modo administrador: ativa com ?admin=1 no link (uma vez só) e o navegador
-// "lembra" disso dali pra frente — não precisa mais do link especial toda vez.
-const ADMIN_PARAM = new URLSearchParams(window.location.search).get('admin') === '1';
-if(ADMIN_PARAM) localStorage.setItem('hseAdminMode', '1');
-const ADMIN_MODE = ADMIN_PARAM || localStorage.getItem('hseAdminMode') === '1';
+// Modo administrador: só com login (senha conferida no Apps Script — ver admin-auth.js).
+const ADMIN_MODE = window.HSE_AUTH && HSE_AUTH.isLoggedIn();
 const API_URL = 'https://script.google.com/macros/s/AKfycby7orhf31seXoADvA2JWeVBRhwsZzbsaaMZ-orXeCgE0r5hAaEB2fsvB0sOn10BVgsveA/exec';
 
 /* ---------------- Idioma (PT / EN / DE) ---------------- */
@@ -324,7 +325,7 @@ const I18N = {
   pt: {
     page_title:'Painel de Análise', page_subtitle:'PONTOS & SEGURANÇA DO TRABALHO',
     back_to_board:'Voltar ao placar', back_to_ros:'Voltar ao ROS', print_report:'Imprimir relatório', exit_admin_mode:'Sair do modo admin',
-    locked_title:'Página restrita à gestão',
+    locked_title:'Página restrita à gestão', login_btn:'Entrar como admin',
     locked_text:'Esse painel reúne indicadores internos da campanha e só fica disponível para quem acessa com autorização de administrador.',
     section_points:'Campanha de Pontos', section_safety:'Segurança do Trabalho (ROS)',
     tab_filial:'Filial', tab_matriz:'Matriz',
@@ -353,7 +354,7 @@ const I18N = {
   en: {
     page_title:'Analytics Panel', page_subtitle:'POINTS & WORKPLACE SAFETY',
     back_to_board:'Back to dashboard', back_to_ros:'Back to reports', print_report:'Print report', exit_admin_mode:'Exit admin mode',
-    locked_title:'Restricted to management',
+    locked_title:'Restricted to management', login_btn:'Sign in as admin',
     locked_text:'This panel gathers internal campaign metrics and is only available to those accessing with admin authorization.',
     section_points:'Points Campaign', section_safety:'Workplace Safety (Reports)',
     tab_filial:'Branch', tab_matriz:'HQ',
@@ -382,7 +383,7 @@ const I18N = {
   de: {
     page_title:'Analyse-Panel', page_subtitle:'PUNKTE & ARBEITSSICHERHEIT',
     back_to_board:'Zurück zum Dashboard', back_to_ros:'Zurück zu Meldungen', print_report:'Bericht drucken', exit_admin_mode:'Admin-Modus verlassen',
-    locked_title:'Nur für das Management',
+    locked_title:'Nur für das Management', login_btn:'Als Admin anmelden',
     locked_text:'Dieses Panel bündelt interne Kampagnenkennzahlen und ist nur mit Admin-Berechtigung zugänglich.',
     section_points:'Punktekampagne', section_safety:'Arbeitssicherheit (Meldungen)',
     tab_filial:'Zweigstelle', tab_matriz:'Hauptsitz',
@@ -432,15 +433,13 @@ applyI18n();
 
 if(!ADMIN_MODE){
   document.getElementById('locked').style.display = 'block';
+  document.getElementById('lockedLoginBtn').addEventListener('click', () => HSE_AUTH.open());
 } else {
   document.getElementById('app').style.display = 'block';
   const logoutEl = document.getElementById('adminLogoutBtn');
   if(logoutEl){
     logoutEl.style.display = '';
-    logoutEl.addEventListener('click', () => {
-      localStorage.removeItem('hseAdminMode');
-      window.location.href = './index.html';
-    });
+    logoutEl.addEventListener('click', () => HSE_AUTH.logout('./index.html'));
   }
 }
 
@@ -469,9 +468,20 @@ let fullData = null;
 
 async function fetchFullData(){
   try{
-    const res = await fetch(API_URL + '?tipo=full', { method:'GET' });
+    // Dados completos só saem do Apps Script com a senha de admin (POST type:'full')
+    const senha = HSE_AUTH.getKey();
+    if(!senha){ HSE_AUTH.handleUnauthorized(); return; }
+    const res = await fetch(API_URL, {
+      method:'POST',
+      headers:{ 'Content-Type':'text/plain;charset=utf-8' },
+      body: JSON.stringify({ type:'full', senha: senha })
+    });
     if(!res.ok) throw new Error('HTTP ' + res.status);
     const json = await res.json();
+    if(!json.ok){
+      if(json.error === 'nao_autorizado' || json.error === 'senha_nao_configurada') HSE_AUTH.handleUnauthorized();
+      throw new Error(json.error || 'falha');
+    }
     fullData = {
       filial: Array.isArray(json.filial) ? json.filial : [],
       matriz: Array.isArray(json.matriz) ? json.matriz : [],

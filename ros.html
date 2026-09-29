@@ -653,7 +653,7 @@
   <div class="modal">
     <div class="modal-title-row">
       <h2 data-i18n="admin_panel_title">Painel do administrador</h2>
-      <a class="analise-link-btn" href="./analise.html?admin=1" target="_blank" rel="noopener noreferrer">
+      <a class="analise-link-btn" href="./analise.html" target="_blank" rel="noopener noreferrer">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M18 20V10"></path><path d="M12 20V4"></path><path d="M6 20v-6"></path>
         </svg>
@@ -679,6 +679,7 @@
   </div>
 </div>
 
+<script src="./admin-auth.js"></script>
 <script>
 /* ---------------- Idioma (PT / EN / DE) ---------------- */
 const I18N = {
@@ -718,7 +719,7 @@ const I18N = {
     analise_monthly:'Evolução mensal', analise_empty_monthly:'Ainda não há histórico suficiente pra montar a evolução mensal.',
     analise_participation:'Participação', analise_people_reported:'pessoas diferentes já reportaram um ROS',
     analise_participation_note:'Mais pessoas reportando é sinal positivo — indica que a equipe se sente à vontade pra apontar desvios.',
-    saving:'Salvando...', saved_ros:(n)=>`Salvo! ${n} ROS publicados.`, error_label:'Erro:', error_unknown:'falha desconhecida', error_connection:'Erro de conexão ao salvar.',
+    saving:'Salvando...', saved_ros:(n)=>`Salvo! ${n} ROS publicados.`, error_label:'Erro:', error_unknown:'falha desconhecida', error_connection:'Erro de conexão ao salvar.', error_unauthorized:'sessão de admin inválida — entre novamente.', error_locked:'muitas tentativas de senha erradas, aguarde alguns minutos.',
     my_ros_prompt:'Qual o seu nome, exatamente como aparece em "Aberto por" nos ROS?',
     print_report:'Imprimir relatório', print_title:'Relatório de ROS — Desvios & Planos de Ação',
     print_generated_on:(d)=>`Gerado em ${d}`, print_total_items:(n)=>`${n} ROS listado${n===1?'':'s'}`,
@@ -762,7 +763,7 @@ const I18N = {
     analise_monthly:'Monthly evolution', analise_empty_monthly:'Not enough history yet to build the monthly evolution.',
     analise_participation:'Participation', analise_people_reported:'different people have reported at least one incident',
     analise_participation_note:'More people reporting is a positive sign — it shows the team feels comfortable flagging deviations.',
-    saving:'Saving...', saved_ros:(n)=>`Saved! ${n} report${n===1?'':'s'} published.`, error_label:'Error:', error_unknown:'unknown failure', error_connection:'Connection error while saving.',
+    saving:'Saving...', saved_ros:(n)=>`Saved! ${n} report${n===1?'':'s'} published.`, error_label:'Error:', error_unknown:'unknown failure', error_connection:'Connection error while saving.', error_unauthorized:'invalid admin session — please sign in again.', error_locked:'too many wrong password attempts, please wait a few minutes.',
     my_ros_prompt:'What\'s your name, exactly as it appears in "Reported by" on reports?',
     print_report:'Print report', print_title:'Incident Report — Deviations & Action Plans',
     print_generated_on:(d)=>`Generated on ${d}`, print_total_items:(n)=>`${n} report${n===1?'':'s'} listed`,
@@ -806,7 +807,7 @@ const I18N = {
     analise_monthly:'Monatliche Entwicklung', analise_empty_monthly:'Noch nicht genug Verlauf, um die monatliche Entwicklung darzustellen.',
     analise_participation:'Beteiligung', analise_people_reported:'verschiedene Personen haben mindestens eine Meldung erstattet',
     analise_participation_note:'Mehr Meldungen von mehr Personen sind ein positives Zeichen — es zeigt, dass sich das Team wohlfühlt, Abweichungen zu melden.',
-    saving:'Wird gespeichert...', saved_ros:(n)=>`Gespeichert! ${n} Meldung${n===1?'':'en'} veröffentlicht.`, error_label:'Fehler:', error_unknown:'unbekannter Fehler', error_connection:'Verbindungsfehler beim Speichern.',
+    saving:'Wird gespeichert...', saved_ros:(n)=>`Gespeichert! ${n} Meldung${n===1?'':'en'} veröffentlicht.`, error_label:'Fehler:', error_unknown:'unbekannter Fehler', error_connection:'Verbindungsfehler beim Speichern.', error_unauthorized:'ungültige Admin-Sitzung — bitte erneut anmelden.', error_locked:'zu viele Fehlversuche, bitte einige Minuten warten.',
     my_ros_prompt:'Wie lautet Ihr Name, genau wie er bei "Gemeldet von" in den Meldungen erscheint?',
     print_report:'Bericht drucken', print_title:'Meldungsbericht — Abweichungen & Maßnahmenpläne',
     print_generated_on:(d)=>`Erstellt am ${d}`, print_total_items:(n)=>`${n} Meldung${n===1?'':'en'} aufgelistet`,
@@ -846,11 +847,9 @@ document.querySelectorAll('.lang-btn').forEach(btn => {
 document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.dataset.lang === currentLang));
 applyI18n();
 
-// Modo administrador: ativa com ?admin=1 no link (uma vez só) e o navegador
-// "lembra" disso dali pra frente — não precisa mais do link especial toda vez.
-const ADMIN_PARAM = new URLSearchParams(window.location.search).get('admin') === '1';
-if(ADMIN_PARAM) localStorage.setItem('hseAdminMode', '1');
-const ADMIN_MODE = ADMIN_PARAM || localStorage.getItem('hseAdminMode') === '1';
+// Modo administrador: só com login (senha conferida no Apps Script — ver admin-auth.js).
+// Depois de entrar, o navegador lembra do login por 7 dias.
+const ADMIN_MODE = window.HSE_AUTH && HSE_AUTH.isLoggedIn();
 if(!ADMIN_MODE){
   const gearEl = document.getElementById('gearBtn');
   if(gearEl) gearEl.style.display = 'none';
@@ -860,15 +859,35 @@ if(!ADMIN_MODE){
   const logoutEl = document.getElementById('adminLogoutBtn');
   if(logoutEl){
     logoutEl.style.display = '';
-    logoutEl.addEventListener('click', () => {
-      localStorage.removeItem('hseAdminMode');
-      window.location.href = window.location.pathname;
-    });
+    logoutEl.addEventListener('click', () => HSE_AUTH.logout());
   }
 }
 
 // Mesmo backend (Apps Script) já usado pelo placar de pontos.
 const API_URL = 'https://script.google.com/macros/s/AKfycby7orhf31seXoADvA2JWeVBRhwsZzbsaaMZ-orXeCgE0r5hAaEB2fsvB0sOn10BVgsveA/exec';
+
+// Toda gravação passa por aqui: envia a senha do admin junto e, se o Apps Script
+// recusar (senha trocada/sessão expirada), reabre a janelinha de login.
+async function postAdmin(payload){
+  const senha = HSE_AUTH.getKey();
+  if(!senha){ HSE_AUTH.handleUnauthorized(); return { ok:false, error:'nao_autorizado' }; }
+  const res = await fetch(API_URL, {
+    method:'POST',
+    headers:{ 'Content-Type':'text/plain;charset=utf-8' },
+    body: JSON.stringify(Object.assign({}, payload, { senha: senha }))
+  });
+  const json = await res.json();
+  if(!json.ok && (json.error === 'nao_autorizado' || json.error === 'senha_nao_configurada')){
+    HSE_AUTH.handleUnauthorized();
+  }
+  return json;
+}
+// Texto amigável pros erros de gravação
+function adminErrorText(err){
+  if(err === 'nao_autorizado' || err === 'senha_nao_configurada') return t('error_unauthorized');
+  if(err === 'bloqueado') return t('error_locked');
+  return err || t('error_unknown');
+}
 
 let allRos = [];
 let allHistoricoRos = [];
@@ -1308,17 +1327,13 @@ document.getElementById('rosDetailBody').addEventListener('click', async (e) => 
     if(!texto) return;
     note.textContent = t('saving');
     try{
-      const res = await fetch(API_URL, {
-        method: 'POST',
-        body: JSON.stringify({ type: 'comentario', rosId: rosId, comentario: texto })
-      });
-      const resData = await res.json();
+      const resData = await postAdmin({ type: 'comentario', rosId: rosId, comentario: texto });
       if(resData.ok){
         input.value = '';
         note.textContent = '';
         await loadRos();
       } else {
-        note.textContent = t('error_label') + ' ' + (resData.error || t('error_unknown'));
+        note.textContent = t('error_label') + ' ' + adminErrorText(resData.error);
       }
     }catch(err){
       note.textContent = t('error_connection');
@@ -1802,17 +1817,13 @@ document.getElementById('rosSaveBtn').addEventListener('click', async () => {
   }));
   rosSaveNote.textContent = t('saving');
   try{
-    const res = await fetch(API_URL, {
-      method: 'POST',
-      body: JSON.stringify({ type: 'ros', rows })
-    });
-    const data = await res.json();
+    const data = await postAdmin({ type: 'ros', rows });
     if(data.ok){
       rosSaveNote.textContent = tf('saved_ros', rows.length);
       await loadRos();
       setTimeout(() => { rosOverlay.classList.remove('show'); }, 900);
     } else {
-      rosSaveNote.textContent = t('error_label') + ' ' + (data.error || t('error_unknown'));
+      rosSaveNote.textContent = t('error_label') + ' ' + adminErrorText(data.error);
     }
   }catch(err){
     rosSaveNote.textContent = t('error_connection');
