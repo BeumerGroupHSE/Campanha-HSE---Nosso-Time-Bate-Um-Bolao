@@ -590,6 +590,22 @@
     color:#fff; padding:9px 10px; font-family:'Inter'; font-size:14px;
   }
   .edit-row input:focus{outline:2px solid var(--blue); outline-offset:1px;}
+  /* modo "Ambas": cada linha ganha um seletor de unidade */
+  .edit-row.with-unit{grid-template-columns:1fr 104px 80px 34px;}
+  .edit-row select{
+    background:rgba(255,255,255,0.05); border:1px solid var(--line); border-radius:8px;
+    color:#fff; padding:9px 6px; font-family:'Inter'; font-size:13px; cursor:pointer;
+  }
+  .edit-row select option{background:#EAF7FC; color:#00303E;}
+  .edit-row select:focus{outline:2px solid var(--blue); outline-offset:1px;}
+  .edit-row select.missing{border-color:#EF4444; color:#FCA5A5;}
+  .edit-group-title{
+    font-family:'Oswald',sans-serif; font-size:12px; letter-spacing:1px; text-transform:uppercase;
+    color:var(--blue-light); margin:14px 0 8px; display:flex; align-items:center; gap:8px;
+  }
+  .edit-group-title::after{content:''; flex:1; height:1px; background:var(--line);}
+  .edit-group-title .count{color:var(--muted); font-family:'Inter'; letter-spacing:0; text-transform:none; font-size:11.5px;}
+  @media (max-width:520px){ .edit-row.with-unit{grid-template-columns:1fr 92px 64px 34px;} }
   .edit-row button{
     background:rgba(255,80,80,0.12); border:1px solid rgba(255,80,80,0.3); border-radius:8px;
     color:#ff9c9c; cursor:pointer; font-size:15px;
@@ -1098,6 +1114,7 @@
       <div class="unit-toggle">
         <button class="active" data-unit="filial" id="btnFilial" data-i18n="tab_filial">Filial</button>
         <button data-unit="matriz" id="btnMatriz" data-i18n="tab_matriz">Matriz</button>
+        <button data-unit="ambas" id="btnAmbas" data-i18n="tab_ambas">Ambas</button>
       </div>
       <div id="editRows"></div>
       <button class="add-btn" id="addRowBtn" data-i18n="add_collaborator">+ adicionar colaborador</button>
@@ -1140,7 +1157,10 @@ const I18N = {
   pt: {
     board_title:'Nosso Time Bate um Bolão', board_subtitle:'CAMPANHA DE SEGURANÇA DO TRABALHO',
     board_subtitle_cap:'Campanha de Segurança do Trabalho',
-    tab_filial:'Filial', tab_matriz:'Matriz', tab_geral:'Geral',
+    tab_filial:'Filial', tab_matriz:'Matriz', tab_geral:'Geral', tab_ambas:'Ambas',
+    edit_choose_unit:'Unidade?', edit_unit_missing:'Escolha a unidade das linhas destacadas em vermelho antes de salvar.',
+    bulk_hint_both:'Cole do Excel: Nome e Total, uma pessoa por linha (pode incluir uma coluna Unidade: Filial ou Matriz). Quem já existir em qualquer unidade tem os pontos atualizados; nomes novos entram no fim da lista e você escolhe a unidade.',
+    save_success_both:'Filial e Matriz publicadas com sucesso!',
     search_collab_placeholder:'Buscar colaborador pelo nome...', clear_search:'Limpar busca',
     ros_panel_btn:'Painel ROS', hse_tools_btn:'Ferramentas HSE', my_performance:'Ver meu desempenho',
     days_since_prefix:'Estamos há', days_since_suffix:'dias sem acidentes de trabalho',
@@ -1201,7 +1221,10 @@ const I18N = {
   en: {
     board_title:'Our Team Scores Big', board_subtitle:'WORKPLACE SAFETY CAMPAIGN',
     board_subtitle_cap:'Workplace Safety Campaign',
-    tab_filial:'Branch', tab_matriz:'HQ', tab_geral:'Overall',
+    tab_filial:'Branch', tab_matriz:'HQ', tab_geral:'Overall', tab_ambas:'Both',
+    edit_choose_unit:'Unit?', edit_unit_missing:'Choose the unit for the rows highlighted in red before saving.',
+    bulk_hint_both:'Paste from Excel: Name and Total, one person per line (you may include a Unit column: Branch/Filial or HQ/Matriz). Anyone already in either unit gets updated; new names go to the end of the list and you pick the unit.',
+    save_success_both:'Branch and HQ published successfully!',
     search_collab_placeholder:'Search employee by name...', clear_search:'Clear search',
     ros_panel_btn:'Incident Reports', hse_tools_btn:'HSE Tools', my_performance:'See my performance',
     days_since_prefix:'We are at', days_since_suffix:'days without workplace accidents',
@@ -1262,7 +1285,10 @@ const I18N = {
   de: {
     board_title:'Unser Team punktet groß', board_subtitle:'KAMPAGNE FÜR ARBEITSSICHERHEIT',
     board_subtitle_cap:'Kampagne für Arbeitssicherheit',
-    tab_filial:'Zweigstelle', tab_matriz:'Hauptsitz', tab_geral:'Gesamt',
+    tab_filial:'Zweigstelle', tab_matriz:'Hauptsitz', tab_geral:'Gesamt', tab_ambas:'Beide',
+    edit_choose_unit:'Einheit?', edit_unit_missing:'Bitte wählen Sie die Einheit für die rot markierten Zeilen, bevor Sie speichern.',
+    bulk_hint_both:'Aus Excel einfügen: Name und Gesamt, eine Person pro Zeile (optional eine Spalte Einheit: Filial oder Matriz). Wer bereits in einer Einheit steht, wird aktualisiert; neue Namen kommen ans Ende und Sie wählen die Einheit.',
+    save_success_both:'Zweigstelle und Hauptsitz erfolgreich veröffentlicht!',
     search_collab_placeholder:'Mitarbeiter nach Namen suchen...', clear_search:'Suche löschen',
     ros_panel_btn:'Vorfallmeldungen', hse_tools_btn:'HSE-Werkzeuge', my_performance:'Meine Leistung ansehen',
     days_since_prefix:'Wir sind bei', days_since_suffix:'Tagen ohne Arbeitsunfälle',
@@ -2209,7 +2235,7 @@ startPolling();
 const overlay = document.getElementById('overlay');
 
 document.getElementById('gearBtn').addEventListener('click', ()=>{
-  editUnit = currentUnit;
+  editUnit = (currentUnit === 'filial' || currentUnit === 'matriz') ? currentUnit : 'ambas';
   syncUnitButtons();
   renderEditRows();
   const diasInput = document.getElementById('diasAcidentesInput');
@@ -2260,15 +2286,25 @@ document.getElementById('diasAcidentesSaveBtn').addEventListener('click', async 
 
 document.getElementById('btnFilial').addEventListener('click', ()=>{ editUnit='filial'; syncUnitButtons(); renderEditRows(); });
 document.getElementById('btnMatriz').addEventListener('click', ()=>{ editUnit='matriz'; syncUnitButtons(); renderEditRows(); });
+document.getElementById('btnAmbas').addEventListener('click', ()=>{ editUnit='ambas'; syncUnitButtons(); renderEditRows(); });
 
 function syncUnitButtons(){
   document.getElementById('btnFilial').classList.toggle('active', editUnit==='filial');
   document.getElementById('btnMatriz').classList.toggle('active', editUnit==='matriz');
+  document.getElementById('btnAmbas').classList.toggle('active', editUnit==='ambas');
+  const hint = document.querySelector('#bulkArea .bulk-hint');
+  if(hint) hint.textContent = t(editUnit === 'ambas' ? 'bulk_hint_both' : 'bulk_hint');
 }
 
 let editBuffer = [];
 function renderEditRows(){
-  editBuffer = data[editUnit].map(r=>({...r}));
+  if(editUnit === 'ambas'){
+    // Filial primeiro, depois Matriz — cada linha sabe de qual unidade é
+    editBuffer = data.filial.map(r=>({...r, unit:'filial'}))
+      .concat(data.matriz.map(r=>({...r, unit:'matriz'})));
+  } else {
+    editBuffer = data[editUnit].map(r=>({...r}));
+  }
   drawEditRows();
   // fecha e limpa a área de colar em lote sempre que o painel (re)abre
   const bulkAreaEl = document.getElementById('bulkArea');
@@ -2280,19 +2316,43 @@ function renderEditRows(){
 }
 function drawEditRows(){
   const container = document.getElementById('editRows');
-  container.innerHTML = editBuffer.map((r,i)=>`
-    <div class="edit-row">
-      <input type="text" value="${r.name.replace(/"/g,'&quot;')}" placeholder="${t('ph_collab_name')}" data-idx="${i}" data-field="name">
+  const both = editUnit === 'ambas';
+  const rowHtml = (r,i)=>`
+    <div class="edit-row${both ? ' with-unit' : ''}">
+      <input type="text" value="${String(r.name||'').replace(/"/g,'&quot;')}" placeholder="${t('ph_collab_name')}" data-idx="${i}" data-field="name">
+      ${both ? `<select data-idx="${i}" data-field="unit" class="${r.unit ? '' : 'missing'}">
+        ${r.unit ? '' : `<option value="" selected>${t('edit_choose_unit')}</option>`}
+        <option value="filial" ${r.unit==='filial'?'selected':''}>${t('tab_filial')}</option>
+        <option value="matriz" ${r.unit==='matriz'?'selected':''}>${t('tab_matriz')}</option>
+      </select>` : ''}
       <input type="number" min="0" value="${r.points}" placeholder="${t('ph_points')}" data-idx="${i}" data-field="points">
       <button data-idx="${i}" class="rm-row" title="${t('remove_row_title')}">✕</button>
-    </div>
-  `).join('');
+    </div>`;
+
+  if(both){
+    // agrupa visualmente: Filial, Matriz e (se houver) linhas novas ainda sem unidade
+    const groups = [['filial', t('tab_filial')], ['matriz', t('tab_matriz')], ['', t('edit_choose_unit')]];
+    container.innerHTML = groups.map(([u, label])=>{
+      const items = editBuffer.map((r,i)=>[r,i]).filter(([r])=> (r.unit||'') === u);
+      if(!items.length) return '';
+      return `<div class="edit-group-title">${label} <span class="count">${items.length}</span></div>` + items.map(([r,i])=>rowHtml(r,i)).join('');
+    }).join('');
+  } else {
+    container.innerHTML = editBuffer.map(rowHtml).join('');
+  }
 
   container.querySelectorAll('input').forEach(inp=>{
     inp.addEventListener('input', (e)=>{
       const idx = +e.target.getAttribute('data-idx');
       const field = e.target.getAttribute('data-field');
       editBuffer[idx][field] = field==='points' ? (parseInt(e.target.value)||0) : e.target.value;
+    });
+  });
+  container.querySelectorAll('select').forEach(sel=>{
+    sel.addEventListener('change', (e)=>{
+      const idx = +e.target.getAttribute('data-idx');
+      editBuffer[idx].unit = e.target.value;
+      drawEditRows(); // reagrupa na unidade escolhida
     });
   });
   container.querySelectorAll('.rm-row').forEach(btn=>{
@@ -2305,8 +2365,12 @@ function drawEditRows(){
 }
 
 document.getElementById('addRowBtn').addEventListener('click', ()=>{
-  editBuffer.push({name:'', points:0});
+  editBuffer.push(editUnit === 'ambas' ? {name:'', points:0, unit:''} : {name:'', points:0});
   drawEditRows();
+  // leva o foco pra linha nova (no modo Ambas ela fica no grupo "Unidade?", no fim)
+  const inputs = document.querySelectorAll('#editRows input[data-field="name"]');
+  const last = [...inputs].find(inp => +inp.getAttribute('data-idx') === editBuffer.length-1);
+  if(last){ last.focus(); last.scrollIntoView({block:'nearest'}); }
 });
 
 /* ---------------- Colar em lote ---------------- */
@@ -2327,6 +2391,13 @@ document.getElementById('bulkCancelBtn').addEventListener('click', ()=>{
   bulkArea.style.display = 'none';
 });
 
+// Reconhece uma coluna de unidade colada junto (Filial/Matriz, ou a cidade)
+function unitFromText(txt){
+  const n = normalizeText(txt);
+  if(n === 'filial' || n === 'belo horizonte' || n === 'bh' || n === 'branch') return 'filial';
+  if(n === 'matriz' || n === 'campinas' || n === 'hq') return 'matriz';
+  return '';
+}
 function parseBulkLine(line){
   // tenta tabulação (padrão ao colar do Excel), depois vírgula, ponto e vírgula,
   // e por fim "nome seguido de número" separados por espaço
@@ -2337,12 +2408,15 @@ function parseBulkLine(line){
     const m = line.match(/^(.*\S)\s+(-?\d+)\D*$/);
     if(m) parts = [m[1].trim(), m[2].trim()];
   }
+  let unit = '';
+  const unitIdx = parts.findIndex(p => unitFromText(p));
+  if(unitIdx >= 0 && parts.length >= 3){ unit = unitFromText(parts[unitIdx]); parts.splice(unitIdx, 1); }
   if(parts.length < 2) return null;
   const name = parts[0];
   const pointsRaw = parts[parts.length-1].replace(/[^\d-]/g,'');
   const points = parseInt(pointsRaw, 10);
   if(!name || isNaN(points)) return null;
-  return { name, points };
+  return { name, points, unit };
 }
 
 document.getElementById('bulkApplyBtn').addEventListener('click', ()=>{
@@ -2353,12 +2427,16 @@ document.getElementById('bulkApplyBtn').addEventListener('click', ()=>{
     if(!line.trim()) return;
     const parsed = parseBulkLine(line);
     if(!parsed){ invalid++; return; }
-    const idx = editBuffer.findIndex(r=>normalizeText(r.name) === normalizeText(parsed.name));
+    const both = editUnit === 'ambas';
+    // no modo Ambas, se a linha colada disser a unidade, procura a pessoa só nela
+    const idx = editBuffer.findIndex(r=>normalizeText(r.name) === normalizeText(parsed.name)
+      && (!both || !parsed.unit || r.unit === parsed.unit));
     if(idx >= 0){
       editBuffer[idx].points = parsed.points;
       updated++;
     } else {
-      editBuffer.push({ name: parsed.name, points: parsed.points });
+      editBuffer.push(both ? { name: parsed.name, points: parsed.points, unit: parsed.unit || '' }
+                           : { name: parsed.name, points: parsed.points });
       added++;
     }
   });
@@ -2373,6 +2451,30 @@ document.getElementById('bulkApplyBtn').addEventListener('click', ()=>{
 document.getElementById('saveBtn').addEventListener('click', async ()=>{
   const clean = editBuffer.filter(r=>r.name && r.name.trim().length>0);
   const note = document.getElementById('saveNote');
+
+  if(editUnit === 'ambas'){
+    if(clean.some(r => r.unit !== 'filial' && r.unit !== 'matriz')){
+      note.textContent = t('edit_unit_missing');
+      const firstMissing = document.querySelector('#editRows select.missing');
+      if(firstMissing){ firstMissing.scrollIntoView({block:'center'}); firstMissing.focus(); }
+      return;
+    }
+    note.textContent = t('saving');
+    const strip = r => ({ name: r.name, points: r.points });
+    let result = await saveUnit('filial', clean.filter(r=>r.unit==='filial').map(strip));
+    if(result.ok) result = await saveUnit('matriz', clean.filter(r=>r.unit==='matriz').map(strip));
+    if(!result.ok){
+      note.textContent = result.error === 'conexao' ? t('error_connection')
+                       : t('error_label') + ' ' + (result.error === 'bloqueado' ? t('error_locked') : t('error_unauthorized'));
+      return;
+    }
+    note.textContent = t('save_success_both');
+    setTimeout(()=>{ note.textContent=''; }, 2500);
+    prevRendered = {}; renderBoard();
+    renderEditRows(); // recarrega a lista já agrupada, com o que ficou salvo
+    return;
+  }
+
   note.textContent = t('saving');
   const result = await saveUnit(editUnit, clean);
   if(!result.ok){
