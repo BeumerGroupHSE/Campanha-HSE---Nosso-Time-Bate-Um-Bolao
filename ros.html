@@ -125,7 +125,7 @@
 
   /* ---------- Cards de ROS ---------- */
   .ros-grid{
-    display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr));
+    display:grid; grid-template-columns:repeat(auto-fill, minmax(min(280px, 100%), 1fr));
     gap:18px; margin-bottom:20px;
   }
   .ros-card{
@@ -486,6 +486,26 @@
   }
   .lang-btn:hover{opacity:0.85; transform:translateY(-1px);}
   .lang-btn.active{opacity:1; filter:none; border-color:var(--blue-light); box-shadow:0 0 0 1px rgba(107,208,247,0.3);}
+
+  /* ---------- Celular: nada pode passar da largura da tela ---------- */
+  body{overflow-x:clip;}
+  @media (max-width:720px){
+    .wrap{padding:18px 14px 80px;}
+    header{gap:14px; padding-bottom:16px; margin-bottom:22px;}
+    .campaign{min-width:0; flex-basis:100%;}
+    .header-actions{flex:1 1 100%; flex-wrap:wrap; justify-content:center; gap:8px;}
+    .back-btn{padding:8px 14px; font-size:12.5px;}
+    .admin-logout-link, #adminLoginBtn{white-space:nowrap;}
+  }
+  .ros-edit-grid{grid-template-columns:repeat(2, minmax(0,1fr));}
+  .ros-edit-grid > *{min-width:0;}
+  .ros-edit-grid input, .ros-edit-grid select, .ros-edit-grid textarea{max-width:100%; box-sizing:border-box;}
+  @media (max-width:520px){
+    .overlay{padding:10px;}
+    .modal{padding:18px 14px; max-height:90vh;}
+    .modal-title-row{flex-wrap:wrap;}
+    .ros-edit-grid{grid-template-columns:minmax(0,1fr);}
+  }
 </style>
 </head>
 <body>

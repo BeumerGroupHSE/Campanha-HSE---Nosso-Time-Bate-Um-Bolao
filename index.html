@@ -247,7 +247,7 @@
 
   /* ---------- Pódio ---------- */
   .podium{
-    display:grid; grid-template-columns:1fr 1fr 1fr; align-items:end;
+    display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); align-items:end;
     gap:18px; margin-bottom:48px; padding-top:14px;
   }
   .place{
@@ -402,7 +402,7 @@
   .list::-webkit-scrollbar-thumb{background:var(--blue); border-radius:6px;}
   .list::-webkit-scrollbar-thumb:hover{background:var(--blue-light);}
   .row{
-    display:grid; grid-template-columns:44px 1fr 110px auto; align-items:center;
+    display:grid; grid-template-columns:44px minmax(0,1fr) 110px auto; align-items:center;
     gap:16px; padding:13px 22px 13px 20px; border-bottom:1px solid var(--line);
     transition:background .5s ease;
     backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
@@ -581,20 +581,20 @@
   .unit-toggle{display:flex; gap:8px; margin-bottom:16px;}
   .unit-toggle button{
     flex:1; padding:8px; border-radius:8px; border:1px solid var(--line);
-    background:rgba(255,255,255,0.03); color:var(--muted); font-family:'Inter'; font-weight:600; cursor:pointer;
+    background:rgba(255,255,255,0.03); color:var(--muted); font-family:'Inter',sans-serif; font-weight:600; cursor:pointer;
   }
   .unit-toggle button.active{background:var(--blue); color:#031A22; border-color:var(--blue);}
   .edit-row{display:grid; grid-template-columns:1fr 90px 34px; gap:8px; margin-bottom:8px;}
   .edit-row input{
     background:rgba(255,255,255,0.05); border:1px solid var(--line); border-radius:8px;
-    color:#fff; padding:9px 10px; font-family:'Inter'; font-size:14px;
+    color:#fff; padding:9px 10px; font-family:'Inter',sans-serif; font-size:14px;
   }
   .edit-row input:focus{outline:2px solid var(--blue); outline-offset:1px;}
   /* modo "Ambas": cada linha ganha um seletor de unidade */
   .edit-row.with-unit{grid-template-columns:1fr 104px 80px 34px;}
   .edit-row select{
     background:rgba(255,255,255,0.05); border:1px solid var(--line); border-radius:8px;
-    color:#fff; padding:9px 6px; font-family:'Inter'; font-size:13px; cursor:pointer;
+    color:#fff; padding:9px 6px; font-family:'Inter',sans-serif; font-size:13px; cursor:pointer;
   }
   .edit-row select option{background:#EAF7FC; color:#00303E;}
   .edit-row select:focus{outline:2px solid var(--blue); outline-offset:1px;}
@@ -604,15 +604,15 @@
     color:var(--blue-light); margin:14px 0 8px; display:flex; align-items:center; gap:8px;
   }
   .edit-group-title::after{content:''; flex:1; height:1px; background:var(--line);}
-  .edit-group-title .count{color:var(--muted); font-family:'Inter'; letter-spacing:0; text-transform:none; font-size:11.5px;}
-  @media (max-width:520px){ .edit-row.with-unit{grid-template-columns:1fr 92px 64px 34px;} }
+  .edit-group-title .count{color:var(--muted); font-family:'Inter',sans-serif; letter-spacing:0; text-transform:none; font-size:11.5px;}
+
   .edit-row button{
     background:rgba(255,80,80,0.12); border:1px solid rgba(255,80,80,0.3); border-radius:8px;
     color:#ff9c9c; cursor:pointer; font-size:15px;
   }
   .add-btn{
     width:100%; padding:10px; margin-top:6px; border-radius:8px; border:1px dashed var(--line);
-    background:transparent; color:var(--muted); cursor:pointer; font-family:'Inter'; font-weight:600;
+    background:transparent; color:var(--muted); cursor:pointer; font-family:'Inter',sans-serif; font-weight:600;
   }
   .add-btn:hover{color:var(--blue-light); border-color:var(--blue-light);}
 
@@ -805,10 +805,55 @@
     .splash-days-banner{transition:none; animation:none;}
   }
 
+  /* ---------- Celular ----------
+     Antes o pódio não encolhia (nome sem quebra de linha segurava a largura) e a
+     página ficava com ~1000px no celular. Aqui tudo passa a caber na tela. */
+  body{overflow-x:clip;}
+  .place{min-width:0;}
+  .edit-row{grid-template-columns:minmax(0,1fr) 90px 34px;}
+  .edit-row > *{min-width:0;}
+  .edit-row.with-unit{grid-template-columns:minmax(0,1fr) 104px 80px 34px;}
+  @media (max-width:520px){
+    .overlay{padding:10px;}
+    .modal{padding:18px 14px; max-height:90vh;}
+    .modal-title-row{flex-wrap:wrap;}
+    .edit-row{grid-template-columns:minmax(0,1fr) 70px 34px; gap:6px;}
+    /* modo Ambas: nome na linha de cima, unidade | pontos | ✕ embaixo */
+    .edit-row.with-unit{grid-template-columns:minmax(0,1fr) 70px 34px; row-gap:6px; padding-bottom:6px; border-bottom:1px solid var(--line);}
+    .edit-row.with-unit input[data-field="name"]{grid-column:1/-1;}
+    .edit-row input, .edit-row select{padding:9px 8px; font-size:14px;}
+    .days-config-row{flex-wrap:wrap;}
+  }
   @media (max-width:720px){
-    .podium{grid-template-columns:1fr 1fr 1fr; gap:10px;}
-    .row{grid-template-columns:32px 1fr 70px;}
+    .wrap{padding:18px 14px 110px;}
+    header{gap:14px; padding-bottom:16px; margin-bottom:22px;}
+    .clock{min-width:0;}
+    .podium{grid-template-columns:repeat(3, minmax(0,1fr)); gap:8px; margin-bottom:28px; padding-top:18px;}
+    .place{padding:14px 6px 12px; border-radius:12px;}
+    .place .medal{width:34px; height:34px; font-size:14px; margin-bottom:8px;}
+    .p1 .medal{width:42px; height:42px; font-size:17px;}
+    .place .name{
+      font-size:12.5px; line-height:1.25; min-height:31px; padding:0 2px;
+      white-space:normal; overflow-wrap:anywhere;
+      display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+    }
+    .place .label{font-size:9px; letter-spacing:1px; margin:2px 0 8px;}
+    .place .tier-badge{font-size:9.5px; padding:2px 6px;}
+    .place .unit-tag{font-size:9.5px;}
+    .score{gap:2px;}
+    .digit{width:21px; height:30px; font-size:17px; border-radius:4px;}
+    .p1 .digit{width:24px; height:34px; font-size:20px;}
+    .row{grid-template-columns:30px minmax(0,1fr) auto; gap:10px; padding:11px 14px;}
+    .row .pos{font-size:13px;}
+    .row .who{font-size:14px;}
     .row .pts{font-size:14px;}
+    .list{max-height:none;}
+    #adminLoginBtn, .admin-logout-link{white-space:nowrap;}
+  }
+  @media (max-width:360px){
+    .place .name{font-size:11.5px;}
+    .digit{width:18px; height:27px; font-size:15px;}
+    .p1 .digit{width:21px; height:31px; font-size:18px;}
   }
 
   /* ---------- Relatório de impressão ---------- */
@@ -1182,6 +1227,9 @@ const I18N = {
     welcome_hint:'Tudo isso fica disponível clicando no ícone de engrenagem <span class="gear-inline">⚙</span> no rodapé da página.',
     welcome_cta:'Entendi, vamos lá!',
     save_success:'Placar publicado com sucesso!',
+    saving_many:'Salvando... com muitas linhas pode levar alguns segundos, não feche o painel.',
+    save_error_connection:'A planilha não respondeu a tempo e não foi possível confirmar a gravação. Confira sua internet e clique em "Salvar e publicar" de novo — nada é duplicado se repetir.',
+    save_error_busy:'Outra gravação ainda está em andamento. Aguarde alguns segundos e tente de novo.',
     saving:'Salvando...', error_label:'Erro:', error_connection:'Erro de conexão ao salvar.', error_unauthorized:'sessão de admin inválida — entre novamente.', error_locked:'muitas tentativas de senha erradas, aguarde alguns minutos.',
     bulk_updated:(n)=>`${n} atualizado(s)`, bulk_added:(n)=>`${n} novo(s)`, bulk_invalid:(n)=>`${n} linha(s) não reconhecida(s)`,
     bulk_review:'. Revise abaixo e clique em "Salvar e publicar".',
@@ -1246,6 +1294,9 @@ const I18N = {
     welcome_hint:'All of this is available by clicking the gear icon <span class="gear-inline">⚙</span> in the page footer.',
     welcome_cta:'Got it, let\'s go!',
     save_success:'Board published successfully!',
+    saving_many:'Saving... with many rows this can take a few seconds, keep this panel open.',
+    save_error_connection:'The spreadsheet did not respond in time and the save could not be confirmed. Check your connection and click "Save and publish" again — repeating does not duplicate anything.',
+    save_error_busy:'Another save is still in progress. Wait a few seconds and try again.',
     saving:'Saving...', error_label:'Error:', error_connection:'Connection error while saving.', error_unauthorized:'invalid admin session — please sign in again.', error_locked:'too many wrong password attempts, please wait a few minutes.',
     bulk_updated:(n)=>`${n} updated`, bulk_added:(n)=>`${n} new`, bulk_invalid:(n)=>`${n} line(s) not recognized`,
     bulk_review:'. Review below and click "Save and publish".',
@@ -1310,6 +1361,9 @@ const I18N = {
     welcome_hint:'All das ist über das Zahnrad-Symbol <span class="gear-inline">⚙</span> in der Fußzeile der Seite verfügbar.',
     welcome_cta:'Verstanden, los geht\'s!',
     save_success:'Board erfolgreich veröffentlicht!',
+    saving_many:'Wird gespeichert... bei vielen Zeilen kann das einige Sekunden dauern, Fenster bitte offen lassen.',
+    save_error_connection:'Die Tabelle hat nicht rechtzeitig geantwortet, das Speichern konnte nicht bestätigt werden. Verbindung prüfen und erneut auf „Speichern" klicken — dabei wird nichts doppelt angelegt.',
+    save_error_busy:'Ein anderer Speichervorgang läuft noch. Bitte einige Sekunden warten.',
     saving:'Wird gespeichert...', error_label:'Fehler:', error_connection:'Verbindungsfehler beim Speichern.', error_unauthorized:'ungültige Admin-Sitzung — bitte erneut anmelden.', error_locked:'zu viele Fehlversuche, bitte einige Minuten warten.',
     bulk_updated:(n)=>`${n} aktualisiert`, bulk_added:(n)=>`${n} neu`, bulk_invalid:(n)=>`${n} Zeile(n) nicht erkannt`,
     bulk_review:'. Unten überprüfen und auf "Speichern und veröffentlichen" klicken.',
@@ -1409,14 +1463,24 @@ const API_URL = 'https://script.google.com/macros/s/AKfycby7orhf31seXoADvA2JWeVB
 
 // Toda gravação passa por aqui: envia a senha do admin junto e, se o Apps Script
 // recusar (senha trocada/sessão expirada), reabre a janelinha de login.
-async function postAdmin(payload){
+async function postAdmin(payload, timeoutMs){
   const senha = HSE_AUTH.getKey();
   if(!senha){ HSE_AUTH.handleUnauthorized(); return { ok:false, error:'nao_autorizado' }; }
-  const res = await fetch(API_URL, {
-    method:'POST',
-    headers:{ 'Content-Type':'text/plain;charset=utf-8' }, // evita pre-flight de CORS no Apps Script
-    body: JSON.stringify(Object.assign({}, payload, { senha: senha }))
-  });
+  // Tempo limite generoso: a primeira gravação depois de um tempo parado pode levar
+  // alguns segundos a mais (Apps Script "acordando").
+  const ctrl = ('AbortController' in window) ? new AbortController() : null;
+  const timer = ctrl ? setTimeout(() => ctrl.abort(), timeoutMs || 60000) : null;
+  let res;
+  try{
+    res = await fetch(API_URL, {
+      method:'POST',
+      headers:{ 'Content-Type':'text/plain;charset=utf-8' }, // evita pre-flight de CORS no Apps Script
+      body: JSON.stringify(Object.assign({}, payload, { senha: senha })),
+      signal: ctrl ? ctrl.signal : undefined
+    });
+  } finally {
+    if(timer) clearTimeout(timer);
+  }
   const json = await res.json();
   if(!json.ok && (json.error === 'nao_autorizado' || json.error === 'senha_nao_configurada')){
     HSE_AUTH.handleUnauthorized();
@@ -1704,23 +1768,58 @@ async function fetchAllData(){
   }
 }
 
-// Retorna { ok:true } ou { ok:false, error:'...' } — quem chama mostra a mensagem certa.
-async function saveUnit(unit, rows){
-  let json;
-  try{
-    json = await postAdmin({ unit: unit, rows: rows });
-  }catch(e){
-    console.error('Falha ao salvar na planilha:', e);
-    return { ok:false, error:'conexao' };
-  }
-  if(!json.ok) return json;
-
-  // atualização imediata na tela, e confirma buscando de novo da fonte
-  data[unit] = rows;
-  updatedAt[unit] = new Date().toISOString();
-  await fetchAllData();
-  return json;
+// Assinatura simples de uma lista (nome+pontos), pra conferir se o que está na planilha
+// é igual ao que foi enviado.
+function rowsSignature(rows){
+  return (rows || []).filter(r => String(r.name||'').trim())
+    .map(r => normalizeText(r.name) + '=' + (Math.round(Number(r.points)||0)))
+    .sort().join('|');
 }
+
+// Salva uma ou as duas unidades numa única gravação.
+// units = { filial:[{name,points}], matriz:[...] }  (pode mandar só uma)
+// Retorna { ok:true } ou { ok:false, error:'...' } — quem chama mostra a mensagem certa.
+let savingPoints = false;
+async function saveUnits(units){
+  if(savingPoints) return { ok:false, error:'ocupado' };
+  savingPoints = true;
+  stopPolling(); // não consulta a planilha no meio da gravação
+  try{
+    let json;
+    try{
+      json = await postAdmin({ type:'pontos', units: units }, 90000);
+    }catch(e){
+      console.error('Falha/demora ao salvar na planilha:', e);
+      json = null;
+    }
+
+    if(json && json.ok){
+      // o Apps Script já devolve o placar atualizado — sem precisar de outra consulta
+      if(Array.isArray(json.filial)) data.filial = json.filial;
+      if(Array.isArray(json.matriz)) data.matriz = json.matriz;
+      const when = json.updatedAt || new Date().toISOString();
+      updatedAt.filial = when; updatedAt.matriz = when;
+      setLiveState(true);
+      saveCachedData();
+      return { ok:true };
+    }
+    if(json && !json.ok) return json;
+
+    // A resposta não chegou (conexão caiu ou demorou demais) — mas a gravação pode ter
+    // acontecido mesmo assim. Confere na planilha antes de dizer que deu erro.
+    await new Promise(r => setTimeout(r, 2500));
+    const leu = await fetchAllData();
+    if(leu && Object.keys(units).every(u => rowsSignature(data[u]) === rowsSignature(units[u]))){
+      return { ok:true, confirmedLate:true };
+    }
+    return { ok:false, error:'conexao' };
+  } finally {
+    savingPoints = false;
+    if(!document.hidden) startPolling();
+  }
+}
+// compatibilidade (usado na carga inicial da planilha vazia)
+function saveUnit(unit, rows){ return saveUnits({ [unit]: rows }); }
 
 function fmtWhen(iso){
   if(!iso) return t('no_points_yet');
@@ -2448,7 +2547,23 @@ document.getElementById('bulkApplyBtn').addEventListener('click', ()=>{
   bulkTextarea.value = '';
 });
 
+function saveErrorText(result){
+  if(result.error === 'conexao') return t('save_error_connection');
+  if(result.error === 'ocupado') return t('save_error_busy');
+  return t('error_label') + ' ' + (result.error === 'bloqueado' ? t('error_locked')
+    : (result.error === 'nao_autorizado' || result.error === 'senha_nao_configurada') ? t('error_unauthorized')
+    : (result.error || ''));
+}
+function setSaveBusy(busy){
+  const btn = document.getElementById('saveBtn');
+  btn.disabled = busy;
+  btn.style.opacity = busy ? '0.6' : '';
+  btn.style.cursor = busy ? 'wait' : '';
+  btn.textContent = busy ? t('saving') : t('modal_save');
+}
+
 document.getElementById('saveBtn').addEventListener('click', async ()=>{
+  if(savingPoints) return; // evita clique duplo
   const clean = editBuffer.filter(r=>r.name && r.name.trim().length>0);
   const note = document.getElementById('saveNote');
 
@@ -2459,31 +2574,29 @@ document.getElementById('saveBtn').addEventListener('click', async ()=>{
       if(firstMissing){ firstMissing.scrollIntoView({block:'center'}); firstMissing.focus(); }
       return;
     }
-    note.textContent = t('saving');
-    const strip = r => ({ name: r.name, points: r.points });
-    let result = await saveUnit('filial', clean.filter(r=>r.unit==='filial').map(strip));
-    if(result.ok) result = await saveUnit('matriz', clean.filter(r=>r.unit==='matriz').map(strip));
-    if(!result.ok){
-      note.textContent = result.error === 'conexao' ? t('error_connection')
-                       : t('error_label') + ' ' + (result.error === 'bloqueado' ? t('error_locked') : t('error_unauthorized'));
-      return;
-    }
+    note.textContent = t('saving_many');
+    setSaveBusy(true);
+    const strip = r => ({ name: r.name.trim(), points: r.points });
+    const result = await saveUnits({
+      filial: clean.filter(r=>r.unit==='filial').map(strip),
+      matriz: clean.filter(r=>r.unit==='matriz').map(strip)
+    });
+    setSaveBusy(false);
+    if(!result.ok){ note.textContent = saveErrorText(result); return; }
     note.textContent = t('save_success_both');
-    setTimeout(()=>{ note.textContent=''; }, 2500);
+    setTimeout(()=>{ note.textContent=''; }, 3500);
     prevRendered = {}; renderBoard();
     renderEditRows(); // recarrega a lista já agrupada, com o que ficou salvo
     return;
   }
 
-  note.textContent = t('saving');
-  const result = await saveUnit(editUnit, clean);
-  if(!result.ok){
-    note.textContent = result.error === 'conexao' ? t('error_connection')
-                     : t('error_label') + ' ' + (result.error === 'bloqueado' ? t('error_locked') : t('error_unauthorized'));
-    return;
-  }
+  note.textContent = t('saving_many');
+  setSaveBusy(true);
+  const result = await saveUnits({ [editUnit]: clean.map(r => ({ name: r.name.trim(), points: r.points })) });
+  setSaveBusy(false);
+  if(!result.ok){ note.textContent = saveErrorText(result); return; }
   note.textContent = t('save_success');
-  setTimeout(()=>{ note.textContent=''; }, 2500);
+  setTimeout(()=>{ note.textContent=''; }, 3500);
   if(editUnit === currentUnit){ prevRendered = {}; renderBoard(); }
 });
 
@@ -2673,8 +2786,7 @@ async function init(){
   // colaboradores (nomes reais, pontuação zerada) direto na Planilha Google
   // (só quando um admin logado abre — visitante comum não grava nada)
   if(ADMIN_MODE && data.filial.length === 0 && data.matriz.length === 0){
-    await saveUnit('filial', SEED.filial);
-    await saveUnit('matriz', SEED.matriz);
+    await saveUnits({ filial: SEED.filial, matriz: SEED.matriz });
   }
 
   renderBoard();
